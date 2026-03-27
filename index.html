@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Blendr</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<style>
+/* ======= RESET ======= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#0F0E0B;color:#F0EDE5;}
+
+:root{
+  --cream:#F7F3EB; --cream2:#EDE8DC; --sand:#D4C9B4;
+  --warm-mid:#8C8478; --ink:#1A1814;
+  --accent:#C9A87C; --accent2:#A88050; --gold:#F0D898;
+  --verified:#6BAA8E;
+  --cat-bal:#C8A060; --cat-hi:#7AA8C0; --cat-corr:#A878A0; --cat-glob:#88A870;
+  --surf:#1E1C18; --surf2:#252320; --surf3:#2E2B26;
+  --border:rgba(240,237,229,0.08); --border2:rgba(240,237,229,0.14);
+  --dim:rgba(240,237,229,0.40); --mid:rgba(240,237,229,0.65);
+  --r:14px; --r-sm:8px;
+}
+
+/* ======= APP SHELL ======= */
+#app{
+  width:100%;max-width:430px;height:100vh;
+  margin:0 auto;display:flex;flex-direction:column;
+  background:#0F0E0B;position:relative;overflow:hidden;
+  box-shadow:0 0 80px rgba(0,0,0,0.8);
+}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;animation:fadeIn .2s ease;}
+.screen.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* ======= TOPBAR ======= */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;letter-spacing:.06em;color:var(--cream);}
+.logo em{color:var(--accent);font-style:normal;}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:var(--surf2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;color:var(--mid);}
+.icon-btn:hover{background:var(--surf3);}
+
+/* ======= BOTTOM NAV ======= */
+.bottom-nav{display:flex;align-items:stretch;border-top:1px solid var(--border);background:#0F0E0B;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;cursor:pointer;gap:4px;color:var(--dim);border:none;background:none;font-family:'DM Sans',sans-serif;transition:color .15s;}
+.nav-item.active{color:var(--accent);}
+.nav-label{font-size:9.5px;letter-spacing:.04em;}
+.nav-post-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 0;cursor:pointer;border:none;background:none;}
+.nav-post-inner{width:44px;height:44px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin-top:-16px;box-shadow:0 4px 20px rgba(201,168,124,.4);transition:transform .15s,background .15s;}
+.nav-post-inner:hover{transform:scale(1.06);background:var(--accent2);}
+
+/* ======= AUTH SCREEN ======= */
+#scr-auth{background:#0F0E0B;}
+.auth-wrap{padding:40px 24px;display:flex;flex-direction:column;gap:0;}
+.auth-logo{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:400;font-style:italic;color:var(--cream);letter-spacing:.06em;margin-bottom:4px;}
+.auth-logo em{color:var(--accent);font-style:normal;}
+.auth-tagline{font-size:13px;color:var(--dim);margin-bottom:36px;letter-spacing:.02em;}
+.auth-tabs{display:flex;gap:0;background:var(--surf2);border-radius:var(--r-sm);padding:3px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:8px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--dim);border-radius:6px;cursor:pointer;transition:all .2s;}
+.auth-tab.on{background:var(--surf3);color:var(--cream);}
+.field{width:100%;padding:11px 13px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--surf2);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--cream);outline:none;margin-bottom:10px;transition:border-color .15s;}
+.field:focus{border-color:var(--accent);}
+.field::placeholder{color:var(--dim);}
+.role-select{display:flex;gap:8px;margin-bottom:14px;}
+.role-btn{flex:1;padding:10px;border:1.5px solid var(--border2);border-radius:var(--r-sm);background:var(--surf);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--mid);cursor:pointer;transition:all .2s;text-align:center;}
+.role-btn.on{border-color:var(--accent);background:rgba(201,168,124,.1);color:var(--cream);}
+.btn-primary{width:100%;padding:13px;background:var(--accent);color:var(--ink);border:none;border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;letter-spacing:.02em;}
+.btn-primary:hover{background:var(--accent2);color:#fff;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-sec{width:100%;padding:12px;background:transparent;color:var(--mid);border:1px solid var(--border2);border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;cursor:pointer;margin-top:8px;transition:all .15s;}
+.btn-sec:hover{color:var(--cream);}
+.auth-err{font-size:12px;color:#E05050;margin-bottom:10px;min-height:18px;}
+
+/* ======= FEED ======= */
+.feed-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;}
+.feed-logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:var(--cream);letter-spacing:.06em;}
+.feed-logo em{color:var(--accent);font-style:normal;}
+.filter-row{display:flex;gap:7px;padding:0 14px 12px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.filter-row::-webkit-scrollbar{display:none;}
+.fpill{font-size:11.5px;font-weight:400;padding:6px 14px;border-radius:40px;border:1px solid var(--border2);background:transparent;color:var(--mid);cursor:pointer;white-space:nowrap;transition:all .18s;font-family:'DM Sans',sans-serif;}
+.fpill:hover{color:var(--cream);}
+.fpill.on{background:var(--accent);border-color:var(--accent);color:var(--ink);font-weight:500;}
+
+/* ======= POST CARD ======= */
+.post-card{background:var(--surf);border-radius:var(--r);margin:0 10px 14px;overflow:hidden;border:1px solid var(--border);}
+.post-head{display:flex;align-items:center;padding:12px 14px 8px;gap:10px;}
+.p-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;flex-shrink:0;}
+.p-meta{flex:1;min-width:0;}
+.p-name{font-size:13.5px;font-weight:500;color:var(--cream);display:flex;align-items:center;gap:5px;cursor:pointer;}
+.p-name:hover{color:var(--accent);}
+.v-badge{width:15px;height:15px;background:var(--verified);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.v-badge svg{width:8px;height:8px;}
+.p-sub{font-size:11.5px;color:var(--dim);margin-top:1px;}
+.p-sub .stag{color:var(--accent);font-weight:500;cursor:pointer;}
+.cat-tag{font-size:10px;font-weight:500;padding:3px 9px;border-radius:40px;letter-spacing:.04em;flex-shrink:0;}
+.ct-bal{background:rgba(200,160,96,.15);color:var(--cat-bal);}
+.ct-hi{background:rgba(122,168,192,.15);color:var(--cat-hi);}
+.ct-corr{background:rgba(168,120,160,.15);color:var(--cat-corr);}
+.ct-glob{background:rgba(136,168,112,.15);color:var(--cat-glob);}
+
+/* ======= SLIDER ======= */
+.ba-wrap{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#1A1814;cursor:ew-resize;user-select:none;touch-action:none;}
+.ba-side{position:absolute;inset:0;background-size:cover;background-position:center;}
+.ba-before{z-index:1;}
+.ba-after-clip{position:absolute;inset:0;overflow:hidden;z-index:2;}
+.ba-after{position:absolute;inset:0;width:430px;max-width:none;background-size:cover;background-position:center;}
+.ba-line{position:absolute;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,.8);z-index:4;pointer-events:none;}
+.ba-handle{position:absolute;top:50%;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.92);transform:translate(-50%,-50%);z-index:5;pointer-events:none;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.ba-handle svg{width:14px;height:14px;}
+.ba-lbl{position:absolute;bottom:10px;font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:rgba(15,14,11,.65);color:rgba(255,255,255,.8);z-index:3;pointer-events:none;}
+.lbl-b{left:10px;}.lbl-a{right:10px;}
+.no-img{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--dim);font-size:13px;}
+.no-img svg{opacity:.3;}
+
+/* ======= ACTIONS ======= */
+.post-actions{display:flex;align-items:center;padding:9px 14px 4px;gap:14px;}
+.act-btn{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--dim);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:3px 0;transition:color .15s;}
+.act-btn:hover{color:var(--cream);}
+.act-btn.liked{color:#E05050;}
+.act-btn.liked .hrt{fill:#E05050;stroke:#E05050;}
+.act-btn.saved .bkm{fill:var(--cream);}
+.act-sep{flex:1;}
+.ratings-bar{display:flex;gap:6px;padding:6px 14px 12px;}
+.r-chip{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);background:var(--surf2);padding:3px 8px;border-radius:20px;}
+.r-chip strong{color:var(--cream);font-size:12px;font-weight:500;}
+.r-chip.top strong{color:var(--gold);}
+
+/* ======= UPLOAD ======= */
+.upload-wrap{padding:20px 16px;}
+.up-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;font-weight:300;margin-bottom:4px;color:var(--cream);}
+.up-sub{font-size:12.5px;color:var(--dim);margin-bottom:24px;}
+.step-track{display:flex;align-items:center;margin-bottom:28px;}
+.s-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:500;flex-shrink:0;transition:all .3s;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.s-dot.idle{background:var(--surf3);color:var(--dim);border:1px solid var(--border2);}
+.s-dot.done{background:var(--verified);color:#fff;border:none;}
+.s-dot.cur{background:var(--accent);color:var(--ink);border:none;}
+.s-line{flex:1;height:1px;background:var(--border2);transition:background .3s;}
+.s-line.done{background:var(--verified);}
+.step-body{animation:fadeIn .2s ease;}
+.step-label{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;font-weight:300;margin-bottom:4px;color:var(--cream);}
+.step-hint{font-size:12px;color:var(--dim);margin-bottom:18px;}
+
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:0;text-align:center;background:var(--surf);cursor:pointer;transition:all .2s;margin-bottom:16px;overflow:hidden;position:relative;}
+.upload-zone:hover{border-color:var(--accent);}
+.upload-zone.done{border-color:var(--verified);border-style:solid;}
+.uz-inner{padding:36px 20px;}
+.uz-title{font-size:15px;font-weight:400;color:var(--cream);margin-bottom:4px;}
+.uz-sub{font-size:11.5px;color:var(--dim);}
+.preview-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;}
+.preview-change{position:absolute;bottom:10px;right:10px;background:rgba(15,14,11,.75);color:rgba(255,255,255,.8);font-size:10.5px;padding:4px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;}
+.file-input{display:none;}
+
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}
+.cat-card{border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:14px 12px;cursor:pointer;transition:all .2s;background:var(--surf);}
+.cat-card:hover{border-color:rgba(201,168,124,.4);}
+.cat-card.sel{border-color:var(--accent);background:rgba(201,168,124,.08);}
+.cc-icon{font-size:22px;margin-bottom:7px;}
+.cc-name{font-size:13px;font-weight:500;color:var(--cream);}
+.cc-desc{font-size:11px;color:var(--dim);margin-top:2px;}
+.tag-hint{font-size:11.5px;color:var(--dim);margin-bottom:8px;}
+textarea.field{resize:none;line-height:1.5;}
+.products-input-wrap{display:flex;gap:8px;margin-bottom:8px;}
+.products-input-wrap .field{margin-bottom:0;flex:1;}
+.add-prod-btn{padding:0 14px;background:var(--surf3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--mid);cursor:pointer;font-size:20px;flex-shrink:0;transition:color .15s;}
+.add-prod-btn:hover{color:var(--cream);}
+.prod-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.prod-chip{font-size:11.5px;padding:4px 10px;border-radius:20px;background:var(--surf3);border:1px solid var(--border2);color:var(--mid);display:flex;align-items:center;gap:5px;}
+.prod-chip button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0;}
+
+/* ======= DETAIL ======= */
+.detail-back{display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:13px;color:var(--mid);cursor:pointer;background:var(--surf);border-bottom:1px solid var(--border);flex-shrink:0;transition:color .15s;}
+.detail-back:hover{color:var(--cream);}
+.detail-ba{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:#1A1814;cursor:ew-resize;user-select:none;touch-action:none;flex-shrink:0;}
+.detail-info{padding:18px 16px;}
+.di-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;font-style:italic;margin-bottom:6px;color:var(--cream);}
+.di-meta{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.di-stylist{font-size:13px;color:var(--accent);font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.di-date{font-size:12px;color:var(--dim);}
+.ratings-block{background:var(--surf2);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;border:1px solid var(--border);}
+.rb-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+.rating-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.rating-row:last-child{margin-bottom:0;}
+.rl{font-size:12.5px;color:var(--mid);width:110px;flex-shrink:0;}
+.rb-wrap{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;}
+.rb-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent2),var(--gold));transition:width 1.2s cubic-bezier(.25,.8,.25,1);}
+.rs{font-size:12.5px;font-weight:500;color:var(--gold);width:28px;text-align:right;}
+.products-wrap{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+.prod-tag{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surf2);border:1px solid var(--border2);color:var(--mid);}
+.comments-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ch-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.comment-item{display:flex;gap:10px;margin-bottom:14px;}
+.cm-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:13px;color:#fff;}
+.cm-body{flex:1;}
+.cm-user{font-size:12px;font-weight:500;color:var(--cream);margin-bottom:2px;}
+.cm-text{font-size:12.5px;color:var(--mid);line-height:1.55;}
+.comment-input-row{display:flex;gap:8px;margin-top:8px;padding-bottom:12px;}
+.comment-field{flex:1;padding:9px 14px;border-radius:40px;border:1px solid var(--border2);background:var(--surf2);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--cream);outline:none;}
+.comment-field:focus{border-color:var(--accent);}
+.comment-field::placeholder{color:var(--dim);}
+.send-btn{width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.send-btn:hover{background:var(--accent2);}
+
+/* ======= PROFILE ======= */
+.profile-banner{height:110px;background:linear-gradient(135deg,#3A2810,#6A4020,#9A6030,#C8A060);position:relative;flex-shrink:0;}
+.pb-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,#0F0E0B 100%);}
+.profile-av-row{display:flex;align-items:flex-end;justify-content:space-between;padding:0 18px;margin-top:-42px;margin-bottom:12px;position:relative;z-index:2;}
+.prof-av{width:80px;height:80px;border-radius:50%;border:3px solid #0F0E0B;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;color:#fff;position:relative;overflow:hidden;}
+.prof-av img{width:100%;height:100%;object-fit:cover;}
+.pav-vbadge{position:absolute;bottom:2px;right:2px;width:22px;height:22px;background:var(--verified);border-radius:50%;border:2.5px solid #0F0E0B;display:flex;align-items:center;justify-content:center;}
+.pav-vbadge svg{width:10px;height:10px;}
+.role-pill{font-size:10.5px;font-weight:500;padding:5px 12px;border-radius:40px;background:rgba(201,168,124,.15);color:var(--accent);border:1px solid rgba(201,168,124,.25);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;}
+.prof-name-wrap{padding:0 18px 4px;}
+.prof-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:var(--cream);display:flex;align-items:center;gap:8px;}
+.prof-handle{font-size:12.5px;color:var(--dim);margin-top:2px;}
+.prof-bio{padding:8px 18px 14px;font-size:13px;color:var(--mid);line-height:1.65;}
+.prof-stats{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px;}
+.ps-item{flex:1;text-align:center;padding:12px 0;border-right:1px solid var(--border);}
+.ps-item:last-child{border-right:none;}
+.ps-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--cream);display:block;line-height:1.2;}
+.ps-lbl{font-size:10px;color:var(--dim);letter-spacing:.04em;}
+.prof-follow-btn{margin:0 16px 14px;padding:11px;width:calc(100% - 32px);background:var(--accent);color:var(--ink);border:none;border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
+.prof-follow-btn:hover{background:var(--accent2);color:#fff;}
+.prof-follow-btn.following{background:transparent;color:var(--mid);border:1px solid var(--border2);}
+.avg-ratings{margin:0 16px 14px;background:var(--surf2);border-radius:var(--r-sm);padding:13px;border:1px solid var(--border);}
+.ar-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.ar-row{display:flex;}
+.ar-item{flex:1;text-align:center;}
+.ar-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:var(--gold);display:block;line-height:1.2;}
+.ar-lbl{font-size:10px;color:var(--dim);}
+.grid-tabs-row{display:flex;border-bottom:1px solid var(--border);padding:0 16px;margin-bottom:2px;}
+.gt{font-size:12.5px;color:var(--dim);padding:8px 0;margin-right:22px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.gt.on{color:var(--cream);border-color:var(--accent);}
+.portfolio-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px;}
+.gi{aspect-ratio:1;position:relative;overflow:hidden;cursor:pointer;}
+.gi img{width:100%;height:100%;object-fit:cover;display:block;}
+.gi-dot{position:absolute;top:6px;left:6px;width:7px;height:7px;border-radius:50%;}
+.gi-overlay{position:absolute;inset:0;background:rgba(15,14,11,.4);opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center;}
+.gi:hover .gi-overlay{opacity:1;}
+.gi-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+
+/* ======= RATING MODAL ======= */
+.modal-bg{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(15,14,11,.8);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-bg.open{opacity:1;pointer-events:all;}
+.modal-sheet{width:100%;background:var(--surf);border-radius:var(--r) var(--r) 0 0;border:1px solid var(--border);padding:20px 18px;transform:translateY(40px);transition:transform .3s cubic-bezier(.25,.8,.25,1);max-height:75vh;overflow-y:auto;}
+.modal-bg.open .modal-sheet{transform:translateY(0);}
+.modal-handle{width:36px;height:3px;background:var(--border2);border-radius:10px;margin:0 auto 16px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;font-weight:300;margin-bottom:4px;color:var(--cream);}
+.modal-sub{font-size:12.5px;color:var(--dim);margin-bottom:18px;}
+.rate-row{margin-bottom:16px;}
+.rate-label{font-size:13px;color:var(--mid);margin-bottom:8px;}
+.stars{display:flex;gap:5px;flex-wrap:wrap;}
+.star{width:32px;height:32px;border-radius:var(--r-sm);background:var(--surf3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--mid);transition:all .15s;}
+.star:hover,.star.on{background:rgba(201,168,124,.2);border-color:var(--accent);color:var(--cream);}
+
+/* ======= LOADING ======= */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:12px;color:var(--dim);font-size:13px;}
+.spinner{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:40px 20px;color:var(--dim);font-size:13px;line-height:1.8;}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.4;}
+
+/* ======= TOAST ======= */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surf3);border:1px solid var(--border2);color:var(--cream);font-size:13px;padding:9px 18px;border-radius:40px;opacity:0;transition:all .3s;white-space:nowrap;z-index:300;pointer-events:none;max-width:300px;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.spacer{height:16px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ======= AUTH ======= -->
+<div class="screen active" id="scr-auth">
+  <div class="scroll">
+    <div class="auth-wrap">
+      <div class="auth-logo">blen<em>d</em>r</div>
+      <div class="auth-tagline">Die Plattform für Haartransformationen</div>
+
+      <!-- SETUP NOTICE -->
+      <div id="setup-notice" style="background:rgba(201,168,124,.1);border:1px solid rgba(201,168,124,.25);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;font-size:12.5px;color:var(--mid);line-height:1.7;display:none;">
+        <strong style="color:var(--accent);display:block;margin-bottom:4px;">⚙️ Supabase noch nicht verbunden</strong>
+        Öffne diese HTML-Datei in einem Texteditor und ersetze <code style="color:var(--accent);font-size:11px;">YOUR_SUPABASE_URL</code> und <code style="color:var(--accent);font-size:11px;">YOUR_SUPABASE_ANON_KEY</code> oben im Script mit deinen Werten aus dem Supabase Dashboard.
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab on" onclick="switchAuthTab('login',this)">Anmelden</button>
+        <button class="auth-tab" onclick="switchAuthTab('register',this)">Registrieren</button>
+      </div>
+
+      <div id="auth-login">
+        <div class="auth-err" id="login-err"></div>
+        <input class="field" id="login-email" type="email" placeholder="E-Mail"/>
+        <input class="field" id="login-pw" type="password" placeholder="Passwort"/>
+        <button class="btn-primary" onclick="doLogin()" id="login-btn">Anmelden</button>
+        <button class="btn-sec" onclick="demoMode()">Demo-Modus (ohne Account)</button>
+      </div>
+
+      <div id="auth-register" style="display:none;">
+        <div class="auth-err" id="reg-err"></div>
+        <input class="field" id="reg-name" placeholder="Vollständiger Name"/>
+        <input class="field" id="reg-username" placeholder="@username"/>
+        <input class="field" id="reg-email" type="email" placeholder="E-Mail"/>
+        <input class="field" id="reg-pw" type="password" placeholder="Passwort (min. 6 Zeichen)"/>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">Du bist...</div>
+        <div class="role-select">
+          <button class="role-btn on" id="role-client" onclick="selectRole('client')">Kundin / Kunde</button>
+          <button class="role-btn" id="role-stylist" onclick="selectRole('stylist')">Stylistin / Stylist</button>
+        </div>
+        <input class="field" id="reg-location" placeholder="Stadt (optional)"/>
+        <button class="btn-primary" onclick="doRegister()" id="reg-btn">Account erstellen</button>
+        <button class="btn-sec" onclick="demoMode()">Demo-Modus (ohne Account)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= FEED ======= -->
+<div class="screen" id="scr-feed">
+  <div class="feed-header">
+    <span class="feed-logo">blen<em>d</em>r</span>
+    <div style="display:flex;gap:8px;">
+      <div class="icon-btn" onclick="showScreen('profile')" id="profile-av-btn" title="Profil">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="2.5"/><path d="M2.5 13c0-3.5 11-3.5 11 0"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="filter-row">
+    <button class="fpill on" data-cat="All" onclick="filterFeed(this)">Alle</button>
+    <button class="fpill" data-cat="Balayage" onclick="filterFeed(this)">Balayage</button>
+    <button class="fpill" data-cat="Highlights" onclick="filterFeed(this)">Highlights</button>
+    <button class="fpill" data-cat="Correction" onclick="filterFeed(this)">Correction</button>
+    <button class="fpill" data-cat="Global Color" onclick="filterFeed(this)">Global Color</button>
+  </div>
+  <div class="scroll" id="feed-scroll">
+    <div class="loading" id="feed-loading"><div class="spinner"></div>Lade Feed…</div>
+    <div id="feed-posts"></div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<!-- ======= UPLOAD ======= -->
+<div class="screen" id="scr-upload">
+  <div class="topbar">
+    <span class="logo">blen<em>d</em>r</span>
+    <button class="icon-btn" onclick="showScreen('feed')">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 1L1 13M1 1L13 13"/></svg>
+    </button>
+  </div>
+  <div class="scroll">
+    <div class="upload-wrap">
+      <div class="up-title">Transformation</div>
+      <div class="up-sub">Teile dein Vorher/Nachher mit der Community</div>
+
+      <div class="step-track">
+        <div class="s-dot cur" id="sd1">1</div>
+        <div class="s-line" id="sl1"></div>
+        <div class="s-dot idle" id="sd2">2</div>
+        <div class="s-line" id="sl2"></div>
+        <div class="s-dot idle" id="sd3">3</div>
+        <div class="s-line" id="sl3"></div>
+        <div class="s-dot idle" id="sd4">4</div>
+      </div>
+
+      <!-- Step 1: Before -->
+      <div id="step-1" class="step-body">
+        <div class="step-label">Vorher-Foto</div>
+        <div class="step-hint">Das Ausgangsbild — vor der Transformation</div>
+        <input type="file" class="file-input" id="file-before" accept="image/*" onchange="handleFileSelect(event,'before')"/>
+        <div class="upload-zone" id="zone-before" onclick="document.getElementById('file-before').click()">
+          <div class="uz-inner" id="uz-before-inner">
+            <div style="margin-bottom:12px;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="var(--dim)" stroke-width="1.5"><rect x="4" y="4" width="28" height="28" rx="6"/><path d="M12 24l4-5 4 4 5-7 5 8"/><circle cx="13" cy="13" r="3"/></svg></div>
+            <div class="uz-title">Vorher-Foto hochladen</div>
+            <div class="uz-sub">JPG, PNG · Max. 10 MB</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-step1" onclick="gotoStep(2)" disabled>Weiter: Nachher-Foto</button>
+      </div>
+
+      <!-- Step 2: After -->
+      <div id="step-2" class="step-body" style="display:none">
+        <div class="step-label">Nachher-Foto</div>
+        <div class="step-hint">Das Ergebnis der Transformation</div>
+        <input type="file" class="file-input" id="file-after" accept="image/*" onchange="handleFileSelect(event,'after')"/>
+        <div class="upload-zone" id="zone-after" onclick="document.getElementById('file-after').click()">
+          <div class="uz-inner" id="uz-after-inner">
+            <div style="margin-bottom:12px;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="var(--dim)" stroke-width="1.5"><rect x="4" y="4" width="28" height="28" rx="6"/><path d="M12 24l4-5 4 4 5-7 5 8"/><circle cx="13" cy="13" r="3"/></svg></div>
+            <div class="uz-title">Nachher-Foto hochladen</div>
+            <div class="uz-sub">JPG, PNG · Max. 10 MB</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-step2" onclick="gotoStep(3)" disabled>Weiter: Kategorie</button>
+        <button class="btn-sec" onclick="gotoStep(1)">Zurück</button>
+      </div>
+
+      <!-- Step 3: Category -->
+      <div id="step-3" class="step-body" style="display:none">
+        <div class="step-label">Kategorie wählen</div>
+        <div class="step-hint">Um welche Art von Transformation handelt es sich?</div>
+        <div class="cat-grid">
+          <div class="cat-card" data-cat="Balayage" onclick="selectCat(this)"><div class="cc-icon">🌿</div><div class="cc-name">Balayage</div><div class="cc-desc">Handgemalte Highlights</div></div>
+          <div class="cat-card" data-cat="Highlights" onclick="selectCat(this)"><div class="cc-icon">✨</div><div class="cc-name">Highlights</div><div class="cc-desc">Folie oder freihändig</div></div>
+          <div class="cat-card" data-cat="Global Color" onclick="selectCat(this)"><div class="cc-icon">🎨</div><div class="cc-name">Global Color</div><div class="cc-desc">Vollständige Färbung</div></div>
+          <div class="cat-card" data-cat="Correction" onclick="selectCat(this)"><div class="cc-icon">⚗️</div><div class="cc-name">Correction</div><div class="cc-desc">Farbkorrektur</div></div>
+        </div>
+        <button class="btn-primary" id="btn-step3" onclick="gotoStep(4)" disabled>Weiter: Details</button>
+        <button class="btn-sec" onclick="gotoStep(2)">Zurück</button>
+      </div>
+
+      <!-- Step 4: Details + Publish -->
+      <div id="step-4" class="step-body" style="display:none">
+        <div class="step-label">Details hinzufügen</div>
+        <div class="step-hint">Optional — hilft der Community das Resultat zu verstehen</div>
+
+        <div class="products-input-wrap">
+          <input class="field" id="prod-input" placeholder="Produkt (z.B. Wella 10.3)" onkeydown="if(event.key==='Enter'){addProduct();event.preventDefault();}"/>
+          <button class="add-prod-btn" onclick="addProduct()" title="Hinzufügen">+</button>
+        </div>
+        <div class="prod-chips" id="prod-chips"></div>
+
+        <textarea class="field" id="post-desc" rows="3" placeholder="Beschreibung — was macht diese Transformation besonders?"></textarea>
+        <div class="tag-hint">Stylistin taggen (wenn du Kundin/Kunde bist)</div>
+        <input class="field" id="tag-stylist" placeholder="@username der Stylistin"/>
+
+        <button class="btn-primary" id="btn-publish" onclick="publishPost()">Transformation veröffentlichen</button>
+        <button class="btn-sec" onclick="gotoStep(3)">Zurück</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<!-- ======= DETAIL ======= -->
+<div class="screen" id="scr-detail">
+  <div class="detail-back" onclick="showScreen('feed')">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 3L4 8L10 13"/></svg>
+    Feed
+  </div>
+  <div class="scroll">
+    <div class="detail-ba" id="detail-ba" onmousedown="sliderStart(event,'detail-ba')" ontouchstart="sliderStart(event,'detail-ba')">
+      <div class="ba-side ba-before" id="detail-before"></div>
+      <div class="ba-after-clip" id="detail-ba-clip" style="width:50%">
+        <div class="ba-side ba-after" id="detail-after" style="position:absolute;inset:0;width:430px;max-width:none;background-size:cover;background-position:center;"></div>
+      </div>
+      <div class="ba-line" id="detail-ba-line" style="left:50%"></div>
+      <div class="ba-handle" id="detail-ba-handle" style="left:50%">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M5 3L2 7L5 11M9 3L12 7L9 11" stroke="#1A1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="ba-lbl lbl-b">Vorher</span>
+      <span class="ba-lbl lbl-a">Nachher</span>
+    </div>
+    <div class="detail-info" id="detail-info">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= PROFILE ======= -->
+<div class="screen" id="scr-profile">
+  <div class="profile-banner"><div class="pb-overlay"></div></div>
+  <div class="scroll" style="margin-top:-20px;">
+    <div id="profile-content">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= BOTTOM NAV ======= -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-item active" id="nav-feed" onclick="showScreen('feed')">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+    <span class="nav-label">Feed</span>
+  </button>
+  <button class="nav-post-btn" onclick="showScreen('upload')">
+    <div class="nav-post-inner">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg>
+    </div>
+  </button>
+  <button class="nav-item" id="nav-profile" onclick="showScreen('profile')">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="10" cy="7" r="3.5"/><path d="M3 17c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+    <span class="nav-label">Profil</span>
+  </button>
+</nav>
+</div>
+
+<!-- ======= MODAL ======= -->
+<div class="modal-bg" id="rate-modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Transformation bewerten</div>
+    <div class="modal-sub">Gib eine Bewertung für dieses Ergebnis ab (1–10)</div>
+    <div class="rate-row"><div class="rate-label">Farbgenauigkeit</div><div class="stars" id="stars-color"></div></div>
+    <div class="rate-row"><div class="rate-label">Blend-Qualität</div><div class="stars" id="stars-blend"></div></div>
+    <div class="rate-row"><div class="rate-label">Technik</div><div class="stars" id="stars-tech"></div></div>
+    <button class="btn-primary" style="margin-top:8px;" onclick="submitRating()">Bewertung abgeben</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// KONFIGURATION — Hier deine Supabase-Zugangsdaten eintragen
+// ============================================================
+const SUPABASE_URL = 'https://xiekpjlfzqvxkwxjpxta.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZWtwamxmenF2eGt3eGpweHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MTI5MjMsImV4cCI6MjA5MDE4ODkyM30.izQ9WFTAwxp9hvVGVwtvS08A_-FganUaKSYV2fN-9ms';
+// ============================================================
+
+let sb = null;
+let currentUser = null;
+let currentProfile = null;
+let selectedRole = 'client';
+let uploadFiles = { before: null, after: null };
+let uploadPreviews = { before: null, after: null };
+let selectedCategory = null;
+let addedProducts = [];
+let currentPostId = null;
+let ratingValues = { color: 9, blend: 8, tech: 9 };
+let isDemoMode = false;
+let currentFilter = 'All';
+
+// Init Supabase
+function initSupabase() {
+  if (false && SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    document.getElementById('setup-notice').style.display = 'block';
+    return false;
+  }
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch(e) {
+    document.getElementById('setup-notice').style.display = 'block';
+    return false;
+  }
+}
+
+// ============================================================
+// SCREEN NAVIGATION
+// ============================================================
+const navMap = { feed:'nav-feed', profile:'nav-profile' };
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('scr-'+id);
+  if(el) el.classList.add('active');
+  const nav = navMap[id];
+  if(nav) { const n = document.getElementById(nav); if(n) n.classList.add('active'); }
+  if(id==='feed') loadFeed();
+  if(id==='profile') loadProfile(currentUser?.id);
+  if(id==='upload') resetUpload();
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function switchAuthTab(tab, btn) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('auth-login').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = tab==='register' ? 'block' : 'none';
+}
+
+function selectRole(r) {
+  selectedRole = r;
+  document.getElementById('role-client').classList.toggle('on', r==='client');
+  document.getElementById('role-stylist').classList.toggle('on', r==='stylist');
+}
+
+async function doLogin() {
+  if(!sb) { demoMode(); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const err = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
+  if(!email || !pw) { err.textContent='Bitte alle Felder ausfüllen.'; return; }
+  btn.disabled = true; btn.textContent = 'Anmelden…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Anmelden';
+  if(error) { err.textContent = error.message; return; }
+  currentUser = data.user;
+  await loadCurrentProfile();
+  enterApp();
+}
+
+async function doRegister() {
+  if(!sb) { demoMode(); return; }
+  const name = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-username').value.trim().replace('@','');
+  const email = document.getElementById('reg-email').value.trim();
+  const pw = document.getElementById('reg-pw').value;
+  const location = document.getElementById('reg-location').value.trim();
+  const err = document.getElementById('reg-err');
+  const btn = document.getElementById('reg-btn');
+  if(!name||!username||!email||!pw) { err.textContent='Bitte alle Pflichtfelder ausfüllen.'; return; }
+  if(pw.length < 6) { err.textContent='Passwort muss mindestens 6 Zeichen haben.'; return; }
+  btn.disabled=true; btn.textContent='Registrieren…';
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw,
+    options: { data: { full_name: name, username, role: selectedRole, location } }
+  });
+  btn.disabled=false; btn.textContent='Account erstellen';
+  if(error) { err.textContent = error.message; return; }
+  currentUser = data.user;
+  // Update profile role + location (trigger creates the row)
+  setTimeout(async () => {
+    await sb.from('profiles').update({ role: selectedRole, location, full_name: name, username }).eq('id', currentUser.id);
+    await loadCurrentProfile();
+    enterApp();
+  }, 800);
+}
+
+function demoMode() {
+  isDemoMode = true;
+  currentUser = { id: 'demo', email: 'demo@blendr.app' };
+  currentProfile = {
+    id: 'demo', username: 'demo.user', full_name: 'Demo Nutzer',
+    role: 'stylist', bio: 'Demo-Modus — kein echtes Konto', verified: false, location: 'Zürich'
+  };
+  enterApp();
+}
+
+function enterApp() {
+  document.getElementById('bottom-nav').style.display = 'flex';
+  showScreen('feed');
+}
+
+async function loadCurrentProfile() {
+  if(!sb || !currentUser || currentUser.id==='demo') return;
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if(data) currentProfile = data;
+}
+
+// ============================================================
+// FEED
+// ============================================================
+let allPosts = [];
+
+async function loadFeed() {
+  const container = document.getElementById('feed-posts');
+  const loading = document.getElementById('feed-loading');
+  loading.style.display = 'flex';
+  container.innerHTML = '';
+
+  if(isDemoMode || !sb) {
+    loading.style.display = 'none';
+    renderDemoPosts(container);
+    return;
+  }
+
+  const { data, error } = await sb
+    .from('posts')
+    .select(`*, profiles(username, full_name, verified, role, avatar_url),
+             tagged:tagged_stylist_id(username, full_name)`)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  loading.style.display = 'none';
+  if(error || !data?.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">✂️</div>Noch keine Beiträge.<br>Sei die Erste!</div>`;
+    return;
+  }
+  allPosts = data;
+  renderPosts(data, container);
+}
+
+function renderPosts(posts, container) {
+  container.innerHTML = '';
+  const filtered = currentFilter === 'All' ? posts : posts.filter(p => p.category === currentFilter);
+  if(!filtered.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🌿</div>Keine Beiträge in dieser Kategorie.</div>`;
+    return;
+  }
+  filtered.forEach(post => {
+    container.appendChild(buildPostCard(post));
+  });
+}
+
+function buildPostCard(post) {
+  const profile = post.profiles || {};
+  const initials = (profile.full_name || profile.username || '?').charAt(0).toUpperCase();
+  const catClass = { 'Balayage':'ct-bal','Highlights':'ct-hi','Correction':'ct-corr','Global Color':'ct-glob' }[post.category] || 'ct-bal';
+  const avgRating = post.ratings_count > 0
+    ? ((post.avg_color_score + post.avg_blend_score + post.avg_technique_score) / 3).toFixed(1)
+    : null;
+  const isHigh = avgRating && parseFloat(avgRating) >= 8.5;
+  const taggedHTML = post.tagged
+    ? `Kundin · getaggt: <span class="stag" onclick="loadProfile('${post.tagged_stylist_id}');showScreen('profile');">@${post.tagged?.username || ''}</span>`
+    : `${profile.role === 'stylist' ? 'Stylistin' : 'Kundin'} · ${profile.location || ''}`;
+
+  const div = document.createElement('div');
+  div.className = 'post-card';
+  div.dataset.cat = post.category;
+  div.dataset.id = post.id;
+  div.innerHTML = `
+    <div class="post-head">
+      <div class="p-av" style="background:${avatarColor(initials)};">${initials}</div>
+      <div class="p-meta">
+        <div class="p-name" onclick="loadProfile('${profile.id || post.user_id}');showScreen('profile');">
+          ${escapeHtml(profile.full_name || profile.username || 'Unbekannt')}
+          ${profile.verified ? '<span class="v-badge"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg></span>' : ''}
+        </div>
+        <div class="p-sub">${taggedHTML}</div>
+      </div>
+      <span class="cat-tag ${catClass}">${post.category}</span>
+    </div>
+    <div class="ba-wrap" id="baw-${post.id}"
+      onmousedown="sliderStart(event,'baw-${post.id}')"
+      ontouchstart="sliderStart(event,'baw-${post.id}')">
+      <div class="ba-side ba-before" id="baw-${post.id}-before" style="${post.before_url ? `background-image:url('${post.before_url}')` : ''}">
+        ${!post.before_url ? '<div class="no-img"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="26" height="26" rx="4"/><circle cx="11" cy="11" r="3"/><path d="M3 22l7-7 5 5 5-7 7 8"/></svg>Kein Bild</div>' : ''}
+      </div>
+      <div class="ba-after-clip" id="baw-${post.id}-clip" style="width:50%">
+        <div class="ba-side ba-after" id="baw-${post.id}-after" style="${post.after_url ? `position:absolute;inset:0;width:430px;max-width:none;background-size:cover;background-position:center;background-image:url('${post.after_url}')` : 'position:absolute;inset:0;width:430px;max-width:none;display:flex;align-items:center;justify-content:center;'}">
+          ${!post.after_url ? '<div class="no-img">Kein Bild</div>' : ''}
+        </div>
+      </div>
+      <div class="ba-line" id="baw-${post.id}-line" style="left:50%"></div>
+      <div class="ba-handle" id="baw-${post.id}-handle" style="left:50%">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M5 3L2 7L5 11M9 3L12 7L9 11" stroke="#1A1814" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="ba-lbl lbl-b">Vorher</span>
+      <span class="ba-lbl lbl-a">Nachher</span>
+    </div>
+    <div class="post-actions">
+      <button class="act-btn" onclick="toggleLike(this,'${post.id}')">
+        <svg class="hrt" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 13.5S2 9.5 2 5.5A3 3 0 0 1 8 4a3 3 0 0 1 6 1.5c0 4-6 8-6 8z"/></svg>
+        <span>${post.likes_count || 0}</span>
+      </button>
+      <button class="act-btn" onclick="openDetail('${post.id}')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 10c0 .8-.7 1.5-1.5 1.5h-8L2 14V4.5C2 3.7 2.7 3 3.5 3h9c.8 0 1.5.7 1.5 1.5V10z"/></svg>
+        <span>${post.comments_count || 0}</span>
+      </button>
+      <button class="act-btn" onclick="openRateModal('${post.id}')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><polygon points="8,2 10,6 14,6.5 11,9.5 11.8,13.5 8,11.5 4.2,13.5 5,9.5 2,6.5 6,6"/></svg>
+        <span>Bewerten</span>
+      </button>
+      <div class="act-sep"></div>
+      <button class="act-btn" onclick="toggleSave(this)">
+        <svg class="bkm" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 2h9a1 1 0 0 1 1 1v9.5l-5.5-3-5.5 3V3a1 1 0 0 1 1-1z"/></svg>
+      </button>
+    </div>
+    ${post.ratings_count > 0 ? `
+    <div class="ratings-bar">
+      <div class="r-chip ${isHigh?'top':''}"><strong>${post.avg_color_score}</strong> Farbe</div>
+      <div class="r-chip ${isHigh?'top':''}"><strong>${post.avg_blend_score}</strong> Blend</div>
+      <div class="r-chip ${isHigh?'top':''}"><strong>${post.avg_technique_score}</strong> Technik</div>
+    </div>` : ''}
+  `;
+  return div;
+}
+
+function filterFeed(el) {
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  currentFilter = el.dataset.cat;
+  if(isDemoMode || !sb) {
+    // re-render demo
+    const container = document.getElementById('feed-posts');
+    renderDemoPosts(container);
+  } else {
+    renderPosts(allPosts, document.getElementById('feed-posts'));
+  }
+}
+
+// ============================================================
+// DETAIL VIEW
+// ============================================================
+async function openDetail(postId) {
+  showScreen('detail');
+  document.getElementById('detail-info').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  // reset slider
+  const clip = document.getElementById('detail-ba-clip');
+  const line = document.getElementById('detail-ba-line');
+  const handle = document.getElementById('detail-ba-handle');
+  if(clip) clip.style.width = '50%';
+  if(line) line.style.left = '50%';
+  if(handle) handle.style.left = '50%';
+
+  currentPostId = postId;
+
+  if(isDemoMode) {
+    renderDetailDemo(); return;
+  }
+
+  const { data: post } = await sb.from('posts')
+    .select(`*, profiles(username, full_name, verified, role, avatar_url, location),
+             tagged:tagged_stylist_id(username, full_name)`)
+    .eq('id', postId).single();
+
+  if(!post) { document.getElementById('detail-info').innerHTML = '<div class="empty">Post nicht gefunden.</div>'; return; }
+
+  // Images
+  const before = document.getElementById('detail-before');
+  const after = document.getElementById('detail-after');
+  if(post.before_url) before.style.backgroundImage = `url('${post.before_url}')`;
+  if(post.after_url) after.style.backgroundImage = `url('${post.after_url}')`;
+
+  // Comments
+  const { data: comments } = await sb.from('comments')
+    .select('*, profiles(username, full_name, avatar_url)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+    .limit(20);
+
+  renderDetailInfo(post, comments || []);
+
+  setTimeout(() => {
+    document.querySelectorAll('#detail-info .rb-fill').forEach(b => {
+      const w = b.dataset.w; b.style.width = '0%';
+      requestAnimationFrame(() => { b.style.width = w; });
+    });
+  }, 120);
+}
+
+function renderDetailInfo(post, comments) {
+  const profile = post.profiles || {};
+  const catClass = { 'Balayage':'ct-bal','Highlights':'ct-hi','Correction':'ct-corr','Global Color':'ct-glob' }[post.category] || 'ct-bal';
+  const prods = (post.products_used || []).map(p => `<span class="prod-tag">${escapeHtml(p)}</span>`).join('');
+  const commentsHTML = comments.map(c => {
+    const cu = c.profiles || {};
+    const ci = (cu.full_name || cu.username || '?').charAt(0).toUpperCase();
+    return `<div class="comment-item">
+      <div class="cm-av" style="background:${avatarColor(ci)};">${ci}</div>
+      <div class="cm-body">
+        <div class="cm-user">${escapeHtml(cu.username || 'anonym')}</div>
+        <div class="cm-text">${escapeHtml(c.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const timeAgo = formatDate(post.created_at);
+
+  document.getElementById('detail-info').innerHTML = `
+    <div class="di-title">${escapeHtml(post.category)} Transformation</div>
+    <div class="di-meta">
+      <div class="di-stylist" onclick="loadProfile('${post.user_id}');showScreen('profile');">
+        ${profile.verified ? '<span class="v-badge" style="width:14px;height:14px;"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg></span>' : ''}
+        ${escapeHtml(profile.full_name || profile.username || 'Unbekannt')}
+      </div>
+      <div class="di-date">· ${timeAgo}</div>
+      <span class="cat-tag ${catClass}" style="margin-left:auto">${post.category}</span>
+    </div>
+    ${post.ratings_count > 0 ? `
+    <div class="ratings-block">
+      <div class="rb-title">Bewertungen (${post.ratings_count})</div>
+      <div class="rating-row"><div class="rl">Farbgenauigkeit</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_color_score*10}%"></div></div><div class="rs">${post.avg_color_score}</div></div>
+      <div class="rating-row"><div class="rl">Blend-Qualität</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_blend_score*10}%"></div></div><div class="rs">${post.avg_blend_score}</div></div>
+      <div class="rating-row"><div class="rl">Technik</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_technique_score*10}%"></div></div><div class="rs">${post.avg_technique_score}</div></div>
+    </div>` : `<div style="text-align:center;padding:14px;font-size:12.5px;color:var(--dim);">Noch keine Bewertungen — sei die Erste!</div>`}
+    ${prods ? `<div class="products-wrap">${prods}</div>` : ''}
+    ${post.description ? `<p style="font-size:13.5px;color:var(--mid);line-height:1.65;margin-bottom:14px;">${escapeHtml(post.description)}</p>` : ''}
+    <div class="comments-head">
+      <div class="ch-title">Kommentare (${post.comments_count || 0})</div>
+      <button class="act-btn" style="font-size:12px;" onclick="openRateModal('${post.id}')">+ Bewerten</button>
+    </div>
+    ${commentsHTML}
+    <div class="comment-input-row">
+      <input class="comment-field" id="comment-input" placeholder="Kommentar hinzufügen…" onkeydown="if(event.key==='Enter'){postComment('${post.id}');}"/>
+      <button class="send-btn" onclick="postComment('${post.id}')">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M11.5 6.5L1.5 1.5l2 5-2 5 10-5z" fill="white"/></svg>
+      </button>
+    </div>
+    <div class="spacer"></div>
+  `;
+  // animate bars
+  setTimeout(() => {
+    document.querySelectorAll('#detail-info .rb-fill').forEach(b => {
+      const w = b.dataset.w; b.style.width='0%';
+      requestAnimationFrame(() => b.style.width = w);
+    });
+  }, 80);
+}
+
+async function postComment(postId) {
+  const input = document.getElementById('comment-input');
+  const text = input.value.trim();
+  if(!text) return;
+  if(isDemoMode) { showToast('Demo-Modus: Kommentare nicht gespeichert'); input.value=''; return; }
+  input.value = '';
+  const { error } = await sb.from('comments').insert({ post_id: postId, user_id: currentUser.id, text });
+  if(error) { showToast('Fehler beim Senden'); return; }
+  openDetail(postId);
+}
+
+// ============================================================
+// UPLOAD
+// ============================================================
+function resetUpload() {
+  uploadFiles = { before: null, after: null };
+  uploadPreviews = { before: null, after: null };
+  selectedCategory = null;
+  addedProducts = [];
+  gotoStep(1);
+  document.getElementById('prod-chips').innerHTML = '';
+  document.getElementById('post-desc').value = '';
+  document.getElementById('tag-stylist').value = '';
+  ['before','after'].forEach(t => {
+    const zone = document.getElementById('zone-'+t);
+    if(zone) {
+      zone.classList.remove('done');
+      const inner = document.getElementById('uz-'+t+'-inner');
+      if(inner) inner.innerHTML = `<div style="margin-bottom:12px;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="var(--dim)" stroke-width="1.5"><rect x="4" y="4" width="28" height="28" rx="6"/><path d="M12 24l4-5 4 4 5-7 5 8"/><circle cx="13" cy="13" r="3"/></svg></div><div class="uz-title">${t==='before'?'Vorher':'Nachher'}-Foto hochladen</div><div class="uz-sub">JPG, PNG · Max. 10 MB</div>`;
+    }
+  });
+}
+
+function handleFileSelect(event, type) {
+  const file = event.target.files[0];
+  if(!file) return;
+  uploadFiles[type] = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    uploadPreviews[type] = e.target.result;
+    const zone = document.getElementById('zone-'+type);
+    zone.classList.add('done');
+    zone.innerHTML = `<img class="preview-img" src="${e.target.result}"/><div class="preview-change">Ändern</div>`;
+    if(type==='before') document.getElementById('btn-step1').disabled = false;
+    if(type==='after') document.getElementById('btn-step2').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function gotoStep(n) {
+  for(let i=1;i<=4;i++) {
+    const step = document.getElementById('step-'+i);
+    if(step) step.style.display = i===n ? 'block' : 'none';
+    const dot = document.getElementById('sd'+i);
+    const line = document.getElementById('sl'+i);
+    if(dot) {
+      dot.className = 's-dot';
+      if(i<n) { dot.classList.add('done'); dot.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>'; }
+      else if(i===n) { dot.classList.add('cur'); dot.textContent=i; }
+      else { dot.classList.add('idle'); dot.textContent=i; }
+    }
+    if(line) { line.className='s-line'; if(i<n) line.classList.add('done'); }
+  }
+}
+
+function selectCat(card) {
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('sel'));
+  card.classList.add('sel');
+  selectedCategory = card.dataset.cat;
+  document.getElementById('btn-step3').disabled = false;
+}
+
+function addProduct() {
+  const input = document.getElementById('prod-input');
+  const val = input.value.trim();
+  if(!val) return;
+  addedProducts.push(val);
+  input.value = '';
+  renderProductChips();
+}
+
+function removeProduct(idx) {
+  addedProducts.splice(idx,1);
+  renderProductChips();
+}
+
+function renderProductChips() {
+  const container = document.getElementById('prod-chips');
+  container.innerHTML = addedProducts.map((p,i) =>
+    `<div class="prod-chip">${escapeHtml(p)}<button onclick="removeProduct(${i})">×</button></div>`
+  ).join('');
+}
+
+async function publishPost() {
+  if(isDemoMode) {
+    showToast('Demo-Modus: Post wurde nicht gespeichert');
+    setTimeout(() => showScreen('feed'), 800);
+    return;
+  }
+  if(!sb || !currentUser) { showToast('Bitte erst anmelden'); return; }
+  if(!uploadFiles.before || !uploadFiles.after) { showToast('Bitte beide Fotos hochladen'); return; }
+  if(!selectedCategory) { showToast('Bitte Kategorie wählen'); return; }
+
+  const btn = document.getElementById('btn-publish');
+  btn.disabled = true; btn.textContent = 'Wird hochgeladen…';
+
+  try {
+    // Upload images to Supabase Storage
+    const uid = currentUser.id;
+    const ts = Date.now();
+    const beforePath = `${uid}/before_${ts}`;
+    const afterPath  = `${uid}/after_${ts}`;
+
+    const { error: e1 } = await sb.storage.from('blendr-images').upload(beforePath, uploadFiles.before, { upsert: true });
+    const { error: e2 } = await sb.storage.from('blendr-images').upload(afterPath,  uploadFiles.after,  { upsert: true });
+    if(e1 || e2) throw new Error('Bild-Upload fehlgeschlagen');
+
+    const { data: { publicUrl: beforeUrl } } = sb.storage.from('blendr-images').getPublicUrl(beforePath);
+    const { data: { publicUrl: afterUrl  } } = sb.storage.from('blendr-images').getPublicUrl(afterPath);
+
+    // Find tagged stylist
+    let tagged_stylist_id = null;
+    const tagInput = document.getElementById('tag-stylist').value.trim().replace('@','');
+    if(tagInput) {
+      const { data: stylist } = await sb.from('profiles').select('id').eq('username', tagInput).single();
+      if(stylist) tagged_stylist_id = stylist.id;
+    }
+
+    const { error: pe } = await sb.from('posts').insert({
+      user_id: uid,
+      before_url: beforeUrl,
+      after_url: afterUrl,
+      category: selectedCategory,
+      description: document.getElementById('post-desc').value.trim() || null,
+      products_used: addedProducts.length ? addedProducts : null,
+      tagged_stylist_id
+    });
+
+    if(pe) throw new Error(pe.message);
+
+    showToast('Transformation veröffentlicht! ✓');
+    setTimeout(() => showScreen('feed'), 600);
+  } catch(err) {
+    btn.disabled = false; btn.textContent = 'Transformation veröffentlichen';
+    showToast('Fehler: ' + err.message);
+  }
+}
+
+// ============================================================
+// PROFILE
+// ============================================================
+async function loadProfile(userId) {
+  const container = document.getElementById('profile-content');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const targetId = userId || currentUser?.id;
+  if(!targetId || targetId === 'demo' || isDemoMode) {
+    renderDemoProfile(container); return;
+  }
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', targetId).single();
+  if(!profile) { container.innerHTML='<div class="empty">Profil nicht gefunden.</div>'; return; }
+
+  const { count: followers } = await sb.from('follows').select('*', {count:'exact',head:true}).eq('following_id', targetId);
+  const { count: following } = await sb.from('follows').select('*', {count:'exact',head:true}).eq('follower_id', targetId);
+  const { data: posts } = await sb.from('posts').select('id,before_url,after_url,category,avg_color_score,avg_blend_score,avg_technique_score,ratings_count').eq('user_id', targetId).order('created_at', {ascending:false}).limit(12);
+
+  const avgColor = posts?.length ? (posts.reduce((s,p)=>s+(p.avg_color_score||0),0)/posts.length).toFixed(1) : '—';
+  const avgBlend = posts?.length ? (posts.reduce((s,p)=>s+(p.avg_blend_score||0),0)/posts.length).toFixed(1) : '—';
+  const avgTech  = posts?.length ? (posts.reduce((s,p)=>s+(p.avg_technique_score||0),0)/posts.length).toFixed(1) : '—';
+
+  let isFollowing = false;
+  if(currentUser && currentUser.id !== targetId) {
+    const { data: fol } = await sb.from('follows').select('id').eq('follower_id', currentUser.id).eq('following_id', targetId).single();
+    isFollowing = !!fol;
+  }
+
+  const isOwn = currentUser?.id === targetId;
+  const initials = (profile.full_name || profile.username || '?').charAt(0).toUpperCase();
+
+  const gridHTML = (posts || []).map(p => {
+    const catClass = { 'Balayage':'var(--cat-bal)','Highlights':'var(--cat-hi)','Correction':'var(--cat-corr)','Global Color':'var(--cat-glob)' }[p.category] || 'var(--accent)';
+    return `<div class="gi" onclick="openDetail('${p.id}');showScreen('detail');">
+      ${p.after_url ? `<img src="${p.after_url}" loading="lazy"/>` : `<div class="gi-placeholder" style="background:var(--surf3);"></div>`}
+      <div class="gi-dot" style="background:${catClass}"></div>
+      <div class="gi-overlay"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><path d="M5 8h6M8 5v6"/></svg></div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="profile-av-row">
+      <div class="prof-av" style="background:${avatarColor(initials)};">
+        ${initials}
+        ${profile.verified ? '<div class="pav-vbadge"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></div>' : ''}
+      </div>
+      <span class="role-pill">${profile.role === 'stylist' ? 'Stylistin' : 'Kundin / Kunde'}</span>
+    </div>
+    <div class="prof-name-wrap">
+      <div class="prof-name">${escapeHtml(profile.full_name || profile.username)}</div>
+      <div class="prof-handle">@${escapeHtml(profile.username || '')} · ${escapeHtml(profile.location || '')}</div>
+    </div>
+    ${profile.bio ? `<div class="prof-bio">${escapeHtml(profile.bio)}</div>` : ''}
+    <div class="prof-stats">
+      <div class="ps-item"><span class="ps-num">${posts?.length || 0}</span><div class="ps-lbl">Beiträge</div></div>
+      <div class="ps-item"><span class="ps-num">${formatNumber(followers||0)}</span><div class="ps-lbl">Follower</div></div>
+      <div class="ps-item"><span class="ps-num">${formatNumber(following||0)}</span><div class="ps-lbl">Gefolgt</div></div>
+    </div>
+    ${!isOwn ? `<button class="prof-follow-btn ${isFollowing?'following':''}" id="follow-btn-${targetId}" onclick="toggleFollow('${targetId}',this)">${isFollowing ? 'Entfolgen' : 'Folgen'}</button>` : ''}
+    <div class="avg-ratings">
+      <div class="ar-title">Durchschnittliche Bewertungen</div>
+      <div class="ar-row">
+        <div class="ar-item"><span class="ar-num">${avgColor}</span><div class="ar-lbl">Farbe</div></div>
+        <div class="ar-item"><span class="ar-num">${avgBlend}</span><div class="ar-lbl">Blend</div></div>
+        <div class="ar-item"><span class="ar-num">${avgTech}</span><div class="ar-lbl">Technik</div></div>
+      </div>
+    </div>
+    <div class="grid-tabs-row">
+      <div class="gt on">Portfolio</div>
+    </div>
+    <div class="portfolio-grid">${gridHTML || '<div class="empty" style="grid-column:1/-1;">Noch keine Beiträge.</div>'}</div>
+    <div class="spacer"></div>
+  `;
+}
+
+async function toggleFollow(targetId, btn) {
+  if(isDemoMode || !sb) { showToast('Anmelden um zu folgen'); return; }
+  const isFollowing = btn.classList.contains('following');
+  if(isFollowing) {
+    await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetId);
+    btn.textContent = 'Folgen'; btn.classList.remove('following');
+    showToast('Entfolgt');
+  } else {
+    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
+    btn.textContent = 'Entfolgen'; btn.classList.add('following');
+    showToast('Du folgst jetzt diesem Profil');
+  }
+}
+
+// ============================================================
+// LIKES & SAVES
+// ============================================================
+async function toggleLike(btn, postId) {
+  const wasLiked = btn.classList.contains('liked');
+  const span = btn.querySelector('span');
+  const icon = btn.querySelector('.hrt');
+  const count = parseInt(span.textContent);
+  btn.classList.toggle('liked');
+  if(!wasLiked) {
+    span.textContent = count + 1;
+    icon.setAttribute('fill','#E05050'); icon.setAttribute('stroke','#E05050');
+    if(!isDemoMode && sb && currentUser) {
+      await sb.from('likes').insert({ post_id: postId, user_id: currentUser.id }).catch(()=>{});
+    }
+    showToast('♥ Geliked');
+  } else {
+    span.textContent = count - 1;
+    icon.setAttribute('fill','none'); icon.setAttribute('stroke','currentColor');
+    if(!isDemoMode && sb && currentUser) {
+      await sb.from('likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+    }
+  }
+}
+
+function toggleSave(btn) {
+  btn.classList.toggle('saved');
+  const icon = btn.querySelector('.bkm');
+  if(btn.classList.contains('saved')) { icon.setAttribute('fill','var(--cream)'); showToast('Gespeichert'); }
+  else { icon.setAttribute('fill','none'); }
+}
+
+// ============================================================
+// RATING MODAL
+// ============================================================
+function openRateModal(postId) {
+  currentPostId = postId;
+  ratingValues = { color: 9, blend: 8, tech: 9 };
+  ['color','blend','tech'].forEach(dim => {
+    const container = document.getElementById('stars-'+dim);
+    const def = ratingValues[dim];
+    container.innerHTML = Array.from({length:10},(_,i) =>
+      `<div class="star ${i<def?'on':''}" onclick="rateStar('${dim}',${i+1})">${i+1}</div>`
+    ).join('');
+  });
+  document.getElementById('rate-modal').classList.add('open');
+}
+
+function rateStar(dim, val) {
+  ratingValues[dim] = val;
+  const container = document.getElementById('stars-'+dim);
+  container.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<val));
+}
+
+function closeModal(e) {
+  if(e.target === document.getElementById('rate-modal')) {
+    document.getElementById('rate-modal').classList.remove('open');
+  }
+}
+
+async function submitRating() {
+  document.getElementById('rate-modal').classList.remove('open');
+  if(isDemoMode || !sb || !currentUser || !currentPostId) { showToast('Bewertung gespeichert (Demo)'); return; }
+  const { error } = await sb.from('ratings').upsert({
+    post_id: currentPostId,
+    user_id: currentUser.id,
+    color_score: ratingValues.color,
+    blend_score: ratingValues.blend,
+    technique_score: ratingValues.tech
+  }, { onConflict: 'post_id,user_id' });
+  if(error) { showToast('Fehler beim Speichern'); return; }
+  showToast('Bewertung abgegeben! ✓');
+  // Refresh detail if open
+  if(document.getElementById('scr-detail').classList.contains('active')) {
+    openDetail(currentPostId);
+  }
+}
+
+// ============================================================
+// SLIDER
+// ============================================================
+let activeSlider = null;
+function sliderStart(e, id) {
+  activeSlider = id;
+  e.preventDefault();
+  const move = (ev) => {
+    if(!activeSlider) return;
+    ev.preventDefault();
+    const el = document.getElementById(activeSlider);
+    if(!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    let pct = Math.max(0.04, Math.min(0.96, (x-rect.left)/rect.width));
+    const ps = (pct*100).toFixed(1)+'%';
+    const clip = document.getElementById(activeSlider+'-clip');
+    const line = document.getElementById(activeSlider+'-line');
+    const handle = document.getElementById(activeSlider+'-handle');
+    if(clip) clip.style.width=ps;
+    if(line) line.style.left=ps;
+    if(handle) handle.style.left=ps;
+  };
+  const end = () => {
+    activeSlider = null;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('mouseup', end);
+    document.removeEventListener('touchend', end);
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, {passive:false});
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchend', end);
+}
+
+// ============================================================
+// DEMO DATA
+// ============================================================
+const demoPosts = [
+  { id:'d1', category:'Balayage', before_url:null, after_url:null,
+    profiles:{ full_name:'Sophie Müller', username:'sophie.m', verified:true, role:'stylist', location:'Zürich' },
+    likes_count:248, comments_count:34, ratings_count:12,
+    avg_color_score:9.2, avg_blend_score:8.8, avg_technique_score:9.0,
+    _beforeGrad:'radial-gradient(ellipse at 50% 30%, #3D3028 0%, #2A2018 40%, #1E1610 100%)',
+    _afterGrad:'radial-gradient(ellipse at 50% 30%, #C8A878 0%, #A07840 50%, #6A4820 100%)',
+  },
+  { id:'d2', category:'Correction',
+    profiles:{ full_name:'Jessica L.', username:'jessica.l', verified:false, role:'client', location:'' },
+    tagged:{ username:'noa.hair', full_name:'Noa K.' }, tagged_stylist_id:'demo2',
+    likes_count:127, comments_count:19, ratings_count:8,
+    avg_color_score:8.5, avg_blend_score:7.9, avg_technique_score:8.2,
+    _beforeGrad:'radial-gradient(ellipse at 50% 30%, #2A2830 0%, #1E1C26 40%, #141218 100%)',
+    _afterGrad:'radial-gradient(ellipse at 50% 30%, #C890B0 0%, #A06890 50%, #70386A 100%)',
+  },
+  { id:'d3', category:'Highlights',
+    profiles:{ full_name:'Noa Kraft', username:'noa.hair', verified:true, role:'stylist', location:'Basel' },
+    likes_count:391, comments_count:62, ratings_count:24,
+    avg_color_score:9.6, avg_blend_score:9.4, avg_technique_score:9.1,
+    _beforeGrad:'radial-gradient(ellipse at 50% 30%, #302820 0%, #241E18 40%, #181410 100%)',
+    _afterGrad:'radial-gradient(ellipse at 50% 30%, #E8D890 0%, #C0A848 50%, #907820 100%)',
+  },
+];
+
+function renderDemoPosts(container) {
+  container.innerHTML = '';
+  const filtered = currentFilter === 'All' ? demoPosts : demoPosts.filter(p => p.category === currentFilter);
+  if(!filtered.length) {
+    container.innerHTML='<div class="empty"><div class="empty-icon">🌿</div>Keine Beiträge in dieser Kategorie.</div>'; return;
+  }
+  filtered.forEach(post => {
+    const card = buildPostCard(post);
+    // Apply gradient backgrounds for demo
+    if(post._beforeGrad) {
+      const bf = card.querySelector(`#baw-${post.id}-before`);
+      if(bf) bf.style.background = post._beforeGrad;
+    }
+    if(post._afterGrad) {
+      const af = card.querySelector(`#baw-${post.id}-after`);
+      if(af) af.style.background = post._afterGrad;
+    }
+    container.appendChild(card);
+  });
+}
+
+function renderDemoProfile(container) {
+  container.innerHTML = `
+    <div class="profile-av-row">
+      <div class="prof-av" style="background:linear-gradient(135deg,#A07840,#C8A860);">S
+        <div class="pav-vbadge"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+      </div>
+      <span class="role-pill">Stylistin</span>
+    </div>
+    <div class="prof-name-wrap">
+      <div class="prof-name">Demo Nutzer</div>
+      <div class="prof-handle">@demo.user · Zürich</div>
+    </div>
+    <div class="prof-bio">Dies ist der Demo-Modus. Melde dich an, um dein echtes Profil zu sehen.</div>
+    <div class="prof-stats">
+      <div class="ps-item"><span class="ps-num">0</span><div class="ps-lbl">Beiträge</div></div>
+      <div class="ps-item"><span class="ps-num">0</span><div class="ps-lbl">Follower</div></div>
+      <div class="ps-item"><span class="ps-num">0</span><div class="ps-lbl">Gefolgt</div></div>
+    </div>
+    <div style="padding:16px;">
+      <button class="btn-primary" onclick="showScreen('auth');document.getElementById('bottom-nav').style.display='none';">Jetzt anmelden</button>
+    </div>
+    <div class="spacer"></div>
+  `;
+}
+
+function renderDetailDemo() {
+  const post = demoPosts.find(p => p.id === currentPostId) || demoPosts[0];
+  const before = document.getElementById('detail-before');
+  const after = document.getElementById('detail-after');
+  if(post._beforeGrad) before.style.background = post._beforeGrad;
+  if(post._afterGrad) { after.style.background = post._afterGrad; after.style.width='430px'; after.style.maxWidth='none'; }
+  document.getElementById('detail-info').innerHTML = `
+    <div class="di-title">${post.category} Transformation</div>
+    <div class="di-meta">
+      <div class="di-stylist"><span class="v-badge" style="width:14px;height:14px;"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg></span>&nbsp;${post.profiles.full_name}</div>
+      <div class="di-date">· vor 2 Stunden</div>
+    </div>
+    <div class="ratings-block">
+      <div class="rb-title">Bewertungen (${post.ratings_count})</div>
+      <div class="rating-row"><div class="rl">Farbgenauigkeit</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_color_score*10}%"></div></div><div class="rs">${post.avg_color_score}</div></div>
+      <div class="rating-row"><div class="rl">Blend-Qualität</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_blend_score*10}%"></div></div><div class="rs">${post.avg_blend_score}</div></div>
+      <div class="rating-row"><div class="rl">Technik</div><div class="rb-wrap"><div class="rb-fill" style="width:0%" data-w="${post.avg_technique_score*10}%"></div></div><div class="rs">${post.avg_technique_score}</div></div>
+    </div>
+    <div class="comments-head"><div class="ch-title">Kommentare (Demo)</div><button class="act-btn" style="font-size:12px;" onclick="openRateModal('${post.id}')">+ Bewerten</button></div>
+    <div class="comment-item"><div class="cm-av" style="background:linear-gradient(135deg,#9A6030,#C8A060);">A</div><div class="cm-body"><div class="cm-user">amelia.r</div><div class="cm-text">Der Blend ist absolut nahtlos — wie lange hat das gedauert?</div></div></div>
+    <div class="comment-item"><div class="cm-av" style="background:linear-gradient(135deg,#5A6880,#8898B0);">K</div><div class="cm-body"><div class="cm-user">kperry</div><div class="cm-text">Speichere das als Inspo für meinen Termin nächsten Monat!</div></div></div>
+    <div class="comment-input-row"><input class="comment-field" placeholder="Kommentar hinzufügen…" disabled/><button class="send-btn" onclick="showToast('Im Demo-Modus nicht verfügbar')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M11.5 6.5L1.5 1.5l2 5-2 5 10-5z" fill="white"/></svg></button></div>
+    <div class="spacer"></div>
+  `;
+  setTimeout(() => {
+    document.querySelectorAll('#detail-info .rb-fill').forEach(b => {
+      const w = b.dataset.w; b.style.width='0%';
+      requestAnimationFrame(() => b.style.width = w);
+    });
+  }, 80);
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function escapeHtml(str) {
+  if(!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function avatarColor(initial) {
+  const colors = [
+    'linear-gradient(135deg,#9A6030,#C8A060)',
+    'linear-gradient(135deg,#5A4880,#9880C0)',
+    'linear-gradient(135deg,#486840,#78A860)',
+    'linear-gradient(135deg,#5A6880,#8898B0)',
+    'linear-gradient(135deg,#803040,#C06070)',
+    'linear-gradient(135deg,#406050,#70A880)',
+  ];
+  const idx = (initial || 'A').charCodeAt(0) % colors.length;
+  return colors[idx];
+}
+
+function formatDate(iso) {
+  if(!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if(diff < 60) return 'gerade eben';
+  if(diff < 3600) return `vor ${Math.floor(diff/60)} Min.`;
+  if(diff < 86400) return `vor ${Math.floor(diff/3600)} Std.`;
+  return `vor ${Math.floor(diff/86400)} Tagen`;
+}
+
+function formatNumber(n) {
+  if(n >= 1000) return (n/1000).toFixed(1).replace('.0','')+'k';
+  return String(n);
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+(async function boot() {
+  const ok = initSupabase();
+  if(ok && sb) {
+    const { data: { session } } = await sb.auth.getSession();
+    if(session) {
+      currentUser = session.user;
+      await loadCurrentProfile();
+      enterApp();
+    }
+  }
+})();
+</script>
+</body>
+</html>
